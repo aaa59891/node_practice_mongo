@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node server/server.js",
     "test": "nodemon --exec \"mocha server/**/*.test.js\""
+  },
+  "engines":{
+    "node": "6.2.2"
   },
   "author": "",
   "license": "ISC",
