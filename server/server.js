@@ -13,11 +13,18 @@ app.post('/todos', (req, res) => {
   const todo = new Todo(req.body);
   todo.save()
     .then((result) => {
-      console.log(result);
       res.send(result);
     })
     .catch((e) => {
-      console.log('Todo can not be created. ');
+      res.status(400).send(e);
+    });
+});
+
+app.get('/todos', (req, res) => {
+  Todo.find()
+    .then((results) => {
+      res.send({results})
+    }, (err) => {
       res.status(400).send(e);
     });
 });
