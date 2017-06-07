@@ -218,7 +218,8 @@ describe('POST /users', () => {
             expect(user).toExist();
             expect(user.password).toNotBe('1234qwer');
             done();
-          });
+          })
+          .catch(done);
       });
   });
 
@@ -237,4 +238,57 @@ describe('POST /users', () => {
       .expect(400)
       .end(done);
   });
-})
+});
+
+describe('POST /users/login', () => {
+  it('should return a user', (done) => {
+    request(app)
+      .post('/users/login')
+      .send({email: users[1].email, password: users[1].password})
+      .expect(200)
+      .end((err, res) => {
+        if(err)
+          return done(err);
+        expect(res.body.user.email).toBe(users[1].email);
+        expect(res.body.user._id).toBe(users[1]._id.toHexString());
+        expect(res.headers['x-auth']).toExist();
+        
+        User.findById(users[1]._id)
+          .then((user) => {
+            expect(user.tokens[0]).toInclude({
+              access: 'auth',
+              token: res.headers['x-auth']
+            });
+            done();
+          })
+          .catch(done);
+      });
+  });
+
+  it('should return 400 if user email is not exist', (done) => {
+    request(app)
+      .post('/users/login')
+      .send({email: 'aaa@nonexist.com', password:'1234qwer'})
+      .expect(400)
+      .end(done);
+  });
+
+  it('should return 400 if password is wrong', (done) => {
+    request(app)
+      .post('/users/login')
+      .send({email: users[1].email, password: 'qqqq11234'})
+      .expect(400)
+      .end((err, res) => {
+        if(err)
+          return done(err);
+        expect(res.headers['x-auth']).toNotExist();
+        
+        User.findById(users[1]._id)
+          .then((user) => {
+            expect(user.token).toNotExist();
+            done();
+          })
+          .catch(done);
+      });
+  });
+});
