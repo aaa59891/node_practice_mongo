@@ -15,8 +15,8 @@ const app = express();
 
 app.use(bodyParser.json());
 
-app.post('/todos', (req, res) => {
-  const todo = new Todo(req.body);
+app.post('/todos', authenticate, (req, res) => {
+  const todo = new Todo(_.assign(req.body, {_creator: req.user._id}));
   todo.save()
     .then((result) => {
       res.send(result);
@@ -26,8 +26,8 @@ app.post('/todos', (req, res) => {
     });
 });
 
-app.get('/todos', (req, res) => {
-  Todo.find()
+app.get('/todos', authenticate, (req, res) => {
+  Todo.find({_creator: req.user._id})
     .then((results) => {
       res.send({results})
     }, (err) => {
@@ -35,12 +35,12 @@ app.get('/todos', (req, res) => {
     });
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
   const {id} = req.params;
   if(!ObjectID.isValid(id))
     return res.status(404).send();
 
-  Todo.findById(id)
+  Todo.findOne({_id: id, _creator: req.user._id})
     .then((todo) => {
       if(!todo)
         return res.status(404).send();
@@ -51,12 +51,12 @@ app.get('/todos/:id', (req, res) => {
     });
 });
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', authenticate, (req, res) => {
   const {id} = req.params;
   if(!ObjectID.isValid(id))
     return res.status(404).send();
 
-  Todo.findByIdAndRemove(id)
+  Todo.findOneAndRemove({_id: id, _creator: req.user._id})
     .then((todo) => {
       if(!todo)
         return res.status(404).send();
@@ -67,7 +67,7 @@ app.delete('/todos/:id', (req, res) => {
     })
 });
 
-app.patch('/todos/:id', (req, res) => {
+app.patch('/todos/:id', authenticate, (req, res) => {
   const {id} = req.params;
   const body = _.pick(req.body, ['text', 'completed']);
   if(!ObjectID.isValid(id))
@@ -80,7 +80,7 @@ app.patch('/todos/:id', (req, res) => {
     body.completedAt = null;
   }
 
-  Todo.findByIdAndUpdate(id, {$set: body}, {new: true})
+  Todo.findOneAndUpdate({_id: id, _creator: req.user._id}, {$set: body}, {new: true})
     .then((todo) => {
       if(!todo)
         return res.status(404).send();
